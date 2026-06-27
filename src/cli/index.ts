@@ -1,21 +1,51 @@
 #!/usr/bin/env node
 
 /**
- * Athar CLI — Entry Point (placeholder for Phase 3)
+ * Athar CLI (أثر)
  * 
  * Commands:
- *   athar setup     - Configure Antigravity IDE integration
- *   athar review    - Interactive spaced repetition review
- *   athar status    - Show pending reviews and stats
- *   athar list      - Browse all lessons
- *   athar dashboard - Launch the web dashboard
+ *   athar setup     — Configure Antigravity IDE integration
+ *   athar review    — Interactive spaced repetition review
+ *   athar status    — Show pending reviews and stats
+ *   athar list      — Browse all lessons
  */
 
-import { createLogger } from '../utils/logger.js';
+import { Command } from 'commander';
+import { reviewCommand } from './commands/review.js';
+import { statusCommand } from './commands/status.js';
+import { listCommand } from './commands/list.js';
+import { setupCommand } from './commands/setup.js';
 
-const log = createLogger('cli');
+const program = new Command();
 
-log.info('Athar CLI v0.1.0 — CLI commands will be implemented in Phase 3');
-console.log('🔮 Athar (أثر) v0.1.0');
-console.log('CLI commands coming in Phase 3. MCP server is ready to use.');
-console.log('\nTo start the MCP server: athar-mcp');
+program
+  .name('athar')
+  .description('أثر — AI-powered programming lesson memory with spaced repetition')
+  .version('0.1.0');
+
+program
+  .command('setup')
+  .description('Configure Antigravity IDE to use Athar MCP server')
+  .action(setupCommand);
+
+program
+  .command('review')
+  .description('Start an interactive spaced repetition review session')
+  .action(reviewCommand);
+
+program
+  .command('status')
+  .description('Show pending reviews and lesson statistics')
+  .action(statusCommand);
+
+program
+  .command('list')
+  .description('Browse all saved lessons')
+  .option('-t, --tag <tag>', 'Filter by tag')
+  .option('-l, --language <lang>', 'Filter by programming language')
+  .option('-s, --status <status>', 'Filter by status (new, learning, learned, mastered)')
+  .option('-q, --search <query>', 'Search lessons by keyword')
+  .option('-n, --limit <number>', 'Maximum results', '20')
+  .action(listCommand);
+
+program.parse();
