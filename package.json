@@ -1,5 +1,5 @@
 {
-  "name": "athar",
+  "name": "@ameenmv/athar",
   "version": "0.1.0",
   "description": "أثر — AI-powered programming lesson memory with spaced repetition. An MCP server that captures lessons from coding sessions and helps you never repeat the same mistake.",
   "type": "module",
@@ -27,10 +27,20 @@
     "programming-lessons",
     "ai-assistant",
     "antigravity",
-    "cli"
+    "cli",
+    "sqlite",
+    "local-first"
   ],
   "author": "Ameen",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ameenmv/athar.git"
+  },
+  "homepage": "https://github.com/ameenmv/athar#readme",
+  "bugs": {
+    "url": "https://github.com/ameenmv/athar/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
     "chalk": "^5.4.0",
@@ -47,3 +57,4 @@
     "node": ">=20.0.0"
   }
 }
+
