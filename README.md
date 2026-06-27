@@ -1,116 +1,242 @@
-# Athar
+# أثر — Athar
 
-Athar is an AI-powered programming memory assistant built on the Model Context Protocol (MCP). It passively captures non-trivial software engineering lessons from your daily coding sessions and ensures long-term retention using a Spaced Repetition System (SM-2).
+> **Every mistake leaves a trace, every lesson leaves an impact.**
 
-By integrating directly with MCP-compatible IDEs (such as Antigravity IDE, Cursor, and VS Code via Cline), Athar transforms the AI assistant from a stateless oracle into a localized, context-aware mentor that understands your specific recurring mistakes.
+An open-source, local-first MCP server that captures programming lessons from AI-assisted coding sessions, stores them in a local SQLite database, and uses spaced repetition to ensure you never repeat the same mistake twice.
+
+<div align="center">
+
+![Node.js](https://img.shields.io/badge/Node.js-≥20-339933?logo=node.js&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-Protocol-blueviolet)
+![License](https://img.shields.io/badge/License-MIT-green)
+![SQLite](https://img.shields.io/badge/SQLite-Local--First-003B57?logo=sqlite&logoColor=white)
+
+</div>
 
 ---
 
-## ⚠️ Requirements
+## 🧠 What is Athar?
 
-- **Node.js**: v20.0.0 or higher (Strict requirement: relies on the experimental `node:sqlite` module).
-- **IDE**: Any MCP-compatible IDE (Antigravity IDE, Cursor, VS Code).
+**Athar** (أثر) is a memory system for developers. It works as an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server that integrates with AI-powered IDEs like [Antigravity IDE](https://antigravity.google).
+
+When you're coding with an AI assistant and it helps you fix a real bug, Athar automatically captures the lesson — the problem, root cause, fix, and review questions — and stores it locally. Later, it uses **spaced repetition** (SM-2 algorithm) to quiz you on past mistakes so they stick in your memory permanently.
+
+### How it works
+
+```
+┌─────────────────────┐     stdio      ┌──────────────────┐
+│   Antigravity IDE   │ ◄────────────► │   Athar MCP      │
+│   (AI Assistant)    │   JSON-RPC     │   Server         │
+└─────────────────────┘                └────────┬─────────┘
+                                                │
+                                       ┌────────▼─────────┐
+                                       │   SQLite DB      │
+                                       │   (local-first)  │
+                                       │   ~/.local/share/ │
+                                       │   athar/lessons.db│
+                                       └──────────────────┘
+                                                │
+                                       ┌────────▼─────────┐
+                                       │   CLI & Dashboard │
+                                       │   athar review    │
+                                       │   athar status    │
+                                       └──────────────────┘
+```
 
 ---
 
-## Installation
+## ✨ Features
 
-Install the package globally via npm:
+- **🔌 MCP Integration** — Works seamlessly with Antigravity IDE via stdio transport
+- **📝 Smart Lesson Capture** — AI assistant saves lessons with structured data: problem, root cause, bad/good code, review questions
+- **🛡️ Quality Validation** — Rejects trivial changes (formatting, typos) and detects duplicates
+- **🔍 Full-Text Search** — FTS5-powered search to recall past lessons instantly
+- **🧠 Spaced Repetition** — SM-2 algorithm schedules reviews at optimal intervals
+- **💾 Local-First** — All data stored locally in SQLite. No cloud, no API keys, no costs
+- **🌐 Bilingual** — Supports lessons in both Arabic and English
+- **⚡ Zero Native Dependencies** — Uses Node.js built-in `node:sqlite` module
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** ≥ 20 (tested on v24)
+- **Antigravity IDE** (or any MCP-compatible IDE)
+
+### Installation
 
 ```bash
-npm install -g athar-mcp
+# Clone the repository
+git clone https://github.com/ameenmv/athar.git
+cd athar
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
 ```
 
-### IDE Configuration
+### Setup with Antigravity IDE
 
-To register the MCP server with your IDE, run the automated setup command:
+Run the setup command (coming in Phase 2), or manually add to your MCP config:
 
-```bash
-athar setup
-```
-
-This command automatically locates your `mcp_config.json` and injects the server path. 
-
-> **Note**: After running setup, restart your IDE or manually refresh the MCP servers list to ensure the `athar` server and its tools (`save_lesson` and `memory`) are loaded.
-
-#### Manual Configuration
-If you prefer to configure your IDE manually or are using an unsupported IDE, add the following to your MCP configuration file:
+**`~/.gemini/config/mcp_config.json`**
 
 ```json
 {
   "mcpServers": {
     "athar": {
       "command": "node",
-      "args": [
-        "--experimental-sqlite",
-        "/absolute/path/to/global/node_modules/athar-mcp/dist/index.js"
-      ]
+      "args": ["/absolute/path/to/athar/dist/index.js"]
     }
   }
 }
 ```
 
+Then restart/refresh MCP servers in Antigravity IDE.
+
 ---
 
-## System Architecture & Workflow
+## 🛠️ MCP Tools
 
-Athar operates on a passive collection and active retrieval model.
+Athar exposes two tools to the AI assistant:
 
-### 1. Passive Collection (IDE Integration)
-You do not need to manually interact with Athar while coding. As you prompt the IDE's AI assistant to resolve complex bugs or architectural issues, the AI evaluates the instructional value of the resolution. If the resolution is deemed non-trivial, the AI autonomously invokes the `save_lesson` MCP tool.
+### `save_lesson`
 
-The data (problem statement, root cause, code diffs, and review questions) is written to a local SQLite database (`~/.local/share/athar/lessons.db`). This process occurs entirely in the background.
+Captures a programming lesson from a real mistake.
 
-### 2. Context Retrieval
-When encountering familiar issues, you may explicitly ask the IDE assistant to "search my memory." The assistant will invoke the `memory` MCP tool, executing a Full-Text Search (FTS5) against your local database to retrieve your historical solutions.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | ✅ | Concise title describing the mistake pattern |
+| `problem` | string | ✅ | What went wrong — the symptom observed |
+| `root_cause` | string | ✅ | WHY it happened — the actual root cause |
+| `lesson` | string | ✅ | Key takeaway — what to remember |
+| `tags` | string[] | ✅ | Categorization tags |
+| `review_questions` | {q,a}[] | ✅ | 1-3 review questions for spaced repetition |
+| `error_message` | string | ❌ | Exact error message or stack trace |
+| `bad_code` | string | ❌ | The incorrect code snippet |
+| `good_code` | string | ❌ | The corrected code snippet |
+| `language` | string | ❌ | Programming language |
+| `file_path` | string | ❌ | File where the error occurred |
+| `git_diff` | string | ❌ | Git diff context |
 
-### 3. Active Review (Spaced Repetition)
-To build long-term retention, run the CLI review session periodically:
+**Validation rules:**
+- Rejects trivial formatting/style changes
+- Rejects if problem and root_cause are identical
+- Requires both bad_code and good_code if either is provided
+- Detects and rejects duplicates via FTS5 similarity
+
+### `memory`
+
+Searches past lessons for relevant mistakes and solutions.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query` | string | ✅ | Search query — keyword, error pattern, or tag |
+| `limit` | number | ❌ | Max results (1-10, default: 3) |
+| `language` | string | ❌ | Filter by programming language |
+| `tags` | string[] | ❌ | Filter by tags |
+
+---
+
+## 📁 Project Structure
+
+```
+athar/
+├── src/
+│   ├── index.ts              # MCP server entry point
+│   ├── server.ts             # McpServer setup & tool registration
+│   ├── db/
+│   │   ├── schema.ts         # SQLite schema + FTS5 + triggers
+│   │   └── connection.ts     # Database singleton
+│   ├── tools/
+│   │   ├── save-lesson.ts    # save_lesson handler + validation
+│   │   ├── memory.ts         # memory search handler
+│   │   └── validators.ts     # Zod schemas
+│   ├── spaced-repetition/    # SM-2 algorithm (Phase 3)
+│   ├── cli/                  # CLI commands (Phase 3)
+│   └── utils/
+│       ├── paths.ts          # XDG-compliant paths
+│       └── logger.ts         # stderr-only logger
+├── dashboard/                # Nuxt 4 web UI (Phase 4)
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## 🗺️ Roadmap
+
+- [x] **Phase 1** — Core MCP Server & Database
+  - [x] SQLite schema with FTS5 full-text search
+  - [x] `save_lesson` tool with quality validation
+  - [x] `memory` search tool with FTS5 + LIKE fallback
+  - [x] Duplicate detection
+  - [x] stderr-only logging (MCP-safe)
+
+- [ ] **Phase 2** — IDE Integration
+  - [ ] `athar setup` command for Antigravity IDE
+  - [ ] Auto-detect and configure MCP settings
+
+- [ ] **Phase 3** — Spaced Repetition & CLI
+  - [ ] SM-2 algorithm implementation
+  - [ ] `athar review` — interactive terminal review sessions
+  - [ ] `athar status` — pending reviews dashboard
+  - [ ] `athar list` — browse and filter lessons
+
+- [ ] **Phase 4** — Nuxt 4 Dashboard
+  - [ ] Web UI for browsing lessons
+  - [ ] Syntax-highlighted code diff viewer
+  - [ ] Review progress visualization
+
+---
+
+## 🧪 Development
 
 ```bash
-athar review
+# Type check
+npm run typecheck
+
+# Build
+npm run build
+
+# Run MCP server directly (for testing)
+npm run dev
+
+# Run smoke tests
+npx tsx src/smoke-test.ts
 ```
-This launches an interactive terminal session driven by the SuperMemo-2 (SM-2) algorithm. You will be prompted with questions generated during the passive collection phase. Self-assess your recall accuracy (0-5), and Athar will dynamically calculate the optimal next review interval.
 
----
+### Debug logging
 
-## Command Line Interface (CLI)
-
-Athar provides several commands for managing your engineering memory:
-
-- `athar status`
-  Displays a high-level statistical overview, including total lessons, pending reviews, and mastery distribution.
-
-- `athar list [options]`
-  Outputs a tabular view of your historical lessons. Supports filtering by tags, language, and status, as well as keyword searching.
-  *Example*: `athar list --language typescript --tag async`
-
-- `athar dashboard`
-  Starts the local Nuxt 4 web interface.
-
----
-
-## Visual Dashboard
-
-For a comprehensive review of your historical data, Athar includes a bundled web dashboard.
-
-Execute the following command:
+Set `ATHAR_DEBUG=1` to enable verbose logging to stderr:
 
 ```bash
-athar dashboard
+ATHAR_DEBUG=1 npm run dev
 ```
-
-This spins up a local Nitro server bound to `http://127.0.0.1:3333`. The dashboard provides:
-- **Analytics Grid**: Insights into your learning velocity and mastery metrics.
-- **Lesson Repository**: A searchable, filterable index of all captured lessons.
-- **Detailed Diff Views**: Side-by-side syntax-highlighted comparisons of bad vs. good code implementations.
 
 ---
 
-## Data Privacy
+## 💡 How the AI Decides to Save a Lesson
 
-Athar operates strictly via `node:sqlite`. All data is stored locally on your filesystem under the XDG data directory (`~/.local/share/athar/`). Zero telemetry is collected, and no data is transmitted to external servers.
+The MCP server includes detailed instructions for the AI assistant. It will save a lesson when:
 
-## License
+- ✅ Helping fix a **non-trivial bug** with a clear root cause
+- ✅ Correcting a **misconception** about an API or framework
+- ✅ A **debugging session** reveals unexpected behavior
+- ✅ An **architectural mistake** is identified
+- ✅ A **security vulnerability** or performance issue is discovered
 
-MIT
+It will **NOT** save for:
+- ❌ Simple typos or formatting fixes
+- ❌ Routine code generation
+- ❌ Style preferences
+
+---
+
+## 📄 License
+
+[MIT](LICENSE) — Built with ❤️ by [Ameen](https://github.com/ameenmv)
