@@ -15,6 +15,7 @@ import { reviewCommand } from './commands/review.js';
 import { statusCommand } from './commands/status.js';
 import { listCommand } from './commands/list.js';
 import { setupCommand } from './commands/setup.js';
+import { dashboardCommand } from './commands/dashboard.js';
 
 const program = new Command();
 
@@ -47,5 +48,10 @@ program
   .option('-q, --search <query>', 'Search lessons by keyword')
   .option('-n, --limit <number>', 'Maximum results', '20')
   .action(listCommand);
+
+program
+  .command('dashboard')
+  .description('Start the visual dashboard in your browser')
+  .action(dashboardCommand);
 
 program.parse();
