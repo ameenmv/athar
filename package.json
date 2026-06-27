@@ -1,5 +1,5 @@
 {
-  "name": "@ameenmv/athar",
+  "name": "athar-mcp",
   "version": "0.1.0",
   "description": "أثر — AI-powered programming lesson memory with spaced repetition. An MCP server that captures lessons from coding sessions and helps you never repeat the same mistake.",
   "type": "module",
