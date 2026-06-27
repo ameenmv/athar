@@ -27,7 +27,7 @@ export async function dashboardCommand() {
   const port = process.env.PORT || '3333';
 
   const child = spawn('node', ['--experimental-sqlite', serverPath], {
-    env: { ...process.env, PORT: port, NODE_ENV: 'production' },
+    env: { ...process.env, PORT: port, HOST: '127.0.0.1', NODE_ENV: 'production' },
     stdio: 'inherit'
   });
 
